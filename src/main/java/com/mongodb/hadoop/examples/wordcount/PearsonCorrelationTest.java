@@ -27,8 +27,8 @@ public class PearsonCorrelationTest {
 			xy += data[row][i] * data[row][j];
 		}
 		double numerator = xy - ((x * y) / n);
-		double denominator1 = xx - (Math.pow(x, 2.0d) / n);
-		double denominator2 = yy - (Math.pow(y, 2.0d) / n);
+//		double denominator1 = xx - (Math.pow(x, 2.0d) / n);
+//		double denominator2 = yy - (Math.pow(y, 2.0d) / n);
 		double denominator = Math.sqrt(xx * yy);
 		double corr = numerator / denominator;
 		return corr;

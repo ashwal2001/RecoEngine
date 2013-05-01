@@ -17,18 +17,21 @@
 
 package com.mongodb.hadoop.examples.wordcount;
 
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
 
-import org.apache.commons.logging.*;
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.util.GenericOptionsParser;
-import org.bson.*;
+import org.bson.BSONObject;
 
-import com.mongodb.hadoop.*;
-import com.mongodb.hadoop.util.*;
+import com.mongodb.hadoop.MongoInputFormat;
+import com.mongodb.hadoop.MongoOutputFormat;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 
 public class PviewCount {
 
@@ -43,8 +46,8 @@ public class PviewCount {
 		public void map(Object key, BSONObject value, Context context)
 				throws IOException, InterruptedException {
 
-			System.out.println("key: " + key);
-			System.out.println("value: " + value);
+			log.debug("key: " + key);
+			log.debug("value: " + value);
 
 			if (value.get("time") != null && value.get("sessionId") != null
 					&& value.get("sku") != null) {

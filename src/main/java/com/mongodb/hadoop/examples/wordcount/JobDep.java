@@ -23,8 +23,10 @@ public class JobDep {
 	public static class SortMapper extends MapReduceBase implements
 			Mapper<LongWritable, Text, DoubleWritable, DoubleWritable> {
 
+		@SuppressWarnings("unchecked")
 		@Override
-		public void map(LongWritable key, Text value, OutputCollector output,
+		public void map(LongWritable key, Text value,
+				@SuppressWarnings("rawtypes") OutputCollector output,
 				Reporter reporter) throws IOException {
 			String[] tokens = value.toString().split(",");
 			double dvalue;
@@ -66,7 +68,7 @@ public class JobDep {
 	public static void main(String[] args) throws Exception {
 
 		JobConf sortConf = new JobConf(JobDep.class);
-		
+
 		sortConf.setJobName("SortJob");
 
 		sortConf.setMapperClass(SortMapper.class);

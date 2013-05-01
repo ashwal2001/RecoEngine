@@ -1,6 +1,6 @@
-// WordCount.java
+// SKU2SKUCount.java
 /*
- * Copyright 2010 10gen Inc.
+ * Copyright 2013 Jade eServices.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,63 +15,59 @@
  * limitations under the License.
  */
 
-package com.mongodb.hadoop.examples.wordcount;
+package com.xyz.reccommendation.driver;
 
 import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
-import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 
-import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 
 /**
- * test.in db.in.insert( { x : "eliot was here" } ) db.in.insert( { x :
- * "eliot is here" } ) db.in.insert( { x : "who is here" } ) =
+ * 
  */
-public class DataCountRevisit {
+public class SKU2SKUCount {
 
-	private static final Log log = LogFactory.getLog(DataCountRevisit.class);
+	private static final Log log = LogFactory.getLog(SKU2SKUCount.class);
 
 	public static class TokenizerMapper extends
-			Mapper<Object, BSONObject, Text, IntWritable> {
+			Mapper<LongWritable, Text, Text, IntWritable> {
 
 		private final static IntWritable one = new IntWritable(1);
 		private final Text word = new Text();
 
-		public void map(Object key, BSONObject value, Context context)
+		public void map(LongWritable key, Text value, Context context)
 				throws IOException, InterruptedException {
 
-			log.debug("key: " + key);
-			System.out.println("value: " + value);
-
-			String text = value.get("value").toString();
-
-			// NI091MA32QWTINDFAS, NI091MA28QWXINDFAS, NI091MA44QWHINDFAS,
-			// UN573MA24POLINDFAS,
-
-			String[] array = text.split("\\, ");
-			System.out.println(array.length);
-			for (int x = 0; x < array.length - 1; x++) {
-				for (int y = x + 1; y < array.length; y++) {
-					if (isValid(array[x]) && isValid(array[y])) {
-						word.set(array[x] + "|" + array[y]);
+			String[] array = value.toString().split("\\,");
+			for (int i = 1; i < array.length - 1; i++) {
+				if (isValid(array[i]) && isValid(array[i + 1])) {
+					if (!array[i].equals(array[i + 1])) {
+						String sku1 = array[i].replaceAll("\"", "");
+						String sku2 = array[i + 1].replaceAll("\"", "");
+						word.set(sku1 + "|" + sku2);
+						log.debug(sku1 + "|" + sku2);
 						context.write(word, one);
 					} else {
-						System.out.println("###########Invalid ###############"
-								+ array[x] + "####" + array[y] + "####");
+						log.debug("## Same ##" + array[i] + " " + array[i + 1]);
 					}
+				} else {
+					log.debug("## Invalid ##" + array[i] + " " + array[i + 1]);
 				}
 			}
 		}
@@ -80,14 +76,9 @@ public class DataCountRevisit {
 	public static class IntSumReducer extends
 			Reducer<Text, IntWritable, Text, BSONWritable> {
 
-		// private final IntWritable result = new IntWritable();
-
 		public void reduce(Text key, Iterable<IntWritable> values,
 				Context context) throws IOException, InterruptedException {
-
-			System.out.println("key: " + key);
-			System.out.println("value: " + values);
-
+			log.debug("Key : " + key.toString());
 			int sum = 0;
 			for (final IntWritable val : values) {
 				sum += val.get();
@@ -95,15 +86,14 @@ public class DataCountRevisit {
 
 			String[] keyArray = key.toString().split("\\|");
 
-			System.out.println("Count : " + sum + " p1 : " + keyArray[0]
-					+ " p2 : " + keyArray[1]);
+			log.debug("Count : " + sum + " p1 : " + keyArray[0] + " p2 : "
+					+ keyArray[1]);
 
 			BasicBSONObject output = new BasicBSONObject();
 			output.put("count", sum);
 			output.put("p1", keyArray[0]);
 			output.put("p2", keyArray[1]);
 
-			// result.set(sum);
 			context.write(key, new BSONWritable(output));
 		}
 	}
@@ -111,16 +101,16 @@ public class DataCountRevisit {
 	public static void main(String[] args) throws Exception {
 
 		final Configuration conf = new Configuration();
-		MongoConfigUtil.setInputURI(conf, "mongodb://localhost/products.out");
-		MongoConfigUtil
-				.setOutputURI(conf, "mongodb://localhost/products.out14");
-		System.out.println("Conf: " + conf);
+		MongoConfigUtil.setOutputURI(conf,
+				"mongodb://54.251.196.236/products.out_stat_custom");
+		log.debug("Conf: " + conf);
 		MongoConfigUtil.setCreateInputSplits(conf, false);
 		args = new GenericOptionsParser(conf, args).getRemainingArgs();
 
-		final Job job = new Job(conf, "data count");
+		final Job job = new Job(conf,
+				"Count the sku to sku mapping from pview data on hdfs in \"inputPview\" path.");
 
-		job.setJarByClass(DataCountRevisit.class);
+		job.setJarByClass(SKU2SKUCount.class);
 
 		job.setMapperClass(TokenizerMapper.class);
 
@@ -133,8 +123,10 @@ public class DataCountRevisit {
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(BSONWritable.class);
 
-		job.setInputFormatClass(MongoInputFormat.class);
+		job.setInputFormatClass(TextInputFormat.class);
 		job.setOutputFormatClass(MongoOutputFormat.class);
+
+		FileInputFormat.setInputPaths(job, new Path("inputPview"));
 
 		System.exit(job.waitForCompletion(true) ? 0 : 1);
 

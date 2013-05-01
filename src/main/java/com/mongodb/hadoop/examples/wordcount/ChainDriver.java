@@ -15,10 +15,12 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
+import com.xyz.reccommendation.driver.SKU2SKUCount;
+
 public class ChainDriver {
 	// public static Logger log = Logger.getLogger(ChainDriver.class);
 
-	private static final Log log = LogFactory.getLog(DataCount.class);
+	private static final Log log = LogFactory.getLog(SKU2SKUCount.class);
 
 	/**
 	 * @param args
@@ -32,7 +34,8 @@ public class ChainDriver {
 		// Start main Chain Job and declare its conf and job
 		Configuration chainConf = new Configuration();
 		
-		Job chainJob = Job.getInstance(chainConf);
+		//Job chainJob = Job.getInstance(chainConf);
+		Job chainJob =  new Job(chainConf, "chain demo");
 		// Variable names kept like conf1 etc to make code less cluttered
 		// Start Mapper for MyMapperA
 		Configuration conf1 = new Configuration(false);

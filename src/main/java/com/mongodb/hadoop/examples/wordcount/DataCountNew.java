@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -46,13 +45,13 @@ public class DataCountNew {
 	public static class TokenizerMapper extends
 			Mapper<Object, BSONObject, Text, BSONWritable> {
 
-		private final static IntWritable one = new IntWritable(1);
+//		private final static IntWritable one = new IntWritable(1);
 		private final Text word = new Text();
 
 		public void map(Object key, BSONObject value, Context context)
 				throws IOException, InterruptedException {
 
-			System.out.println("Map key: " + key);
+			log.debug("Map key: " + key);
 			System.out.println("Map value: " + value);
 
 			String text = value.get("value").toString();

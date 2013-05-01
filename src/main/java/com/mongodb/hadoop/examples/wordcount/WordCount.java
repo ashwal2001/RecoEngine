@@ -30,69 +30,77 @@ import com.mongodb.hadoop.*;
 import com.mongodb.hadoop.util.*;
 
 /**
- * test.in db.in.insert( { x : "eliot was here" } ) db.in.insert( { x : "eliot is here" } ) db.in.insert( { x : "who is
- * here" } ) =
+ * test.in db.in.insert( { x : "eliot was here" } ) db.in.insert( { x :
+ * "eliot is here" } ) db.in.insert( { x : "who is here" } ) =
  */
 public class WordCount {
 
-    private static final Log log = LogFactory.getLog( WordCount.class );
+	private static final Log log = LogFactory.getLog(WordCount.class);
+	
+	enum MyCounters {
+		MAPFUNCTIONCALLS, REDUCEFUNCTIONCALLS
+	}
 
-    public static class TokenizerMapper extends Mapper<Object, BSONObject, Text, IntWritable> {
+	public static class TokenizerMapper extends
+			Mapper<Object, BSONObject, Text, IntWritable> {
 
-        private final static IntWritable one = new IntWritable( 1 );
-        private final Text word = new Text();
+		private final static IntWritable one = new IntWritable(1);
+		private final Text word = new Text();
 
-        public void map( Object key, BSONObject value, Context context ) throws IOException, InterruptedException{
+		public void map(Object key, BSONObject value, Context context)
+				throws IOException, InterruptedException {
+			context.getCounter(MyCounters.MAPFUNCTIONCALLS).increment(1);
+			log.debug("key: " + key);
+			System.out.println("value: " + value);
 
-            System.out.println( "key: " + key );
-            System.out.println( "value: " + value );
+			final StringTokenizer itr = new StringTokenizer(value.get("x")
+					.toString());
+			while (itr.hasMoreTokens()) {
+				word.set(itr.nextToken());
+				context.write(word, one);
+			}
+		}
+	}
 
-            final StringTokenizer itr = new StringTokenizer( value.get( "x" ).toString() );
-            while ( itr.hasMoreTokens() ){
-                word.set( itr.nextToken() );
-                context.write( word, one );
-            }
-        }
-    }
+	public static class IntSumReducer extends
+			Reducer<Text, IntWritable, Text, IntWritable> {
 
-    public static class IntSumReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+		private final IntWritable result = new IntWritable();
 
-        private final IntWritable result = new IntWritable();
+		public void reduce(Text key, Iterable<IntWritable> values,
+				Context context) throws IOException, InterruptedException {
+			context.getCounter(MyCounters.REDUCEFUNCTIONCALLS).increment(1);
+			int sum = 0;
+			for (final IntWritable val : values) {
+				sum += val.get();
+			}
+			result.set(sum);
+			context.write(key, result);
+		}
+	}
 
-        public void reduce( Text key, Iterable<IntWritable> values, Context context )
-                throws IOException, InterruptedException{
+	public static void main(String[] args) throws Exception {
 
-            int sum = 0;
-            for ( final IntWritable val : values ){
-                sum += val.get();
-            }
-            result.set( sum );
-            context.write( key, result );
-        }
-    }
+		final Configuration conf = new Configuration();
+		MongoConfigUtil.setInputURI(conf, "mongodb://localhost/testdb.in");
+		MongoConfigUtil.setOutputURI(conf, "mongodb://localhost/testdb.out");
+		System.out.println("Conf: " + conf);
 
-    public static void main( String[] args ) throws Exception{
+		final Job job = new Job(conf, "word count");
 
-        final Configuration conf = new Configuration();
-        MongoConfigUtil.setInputURI( conf, "mongodb://localhost/testdb.in" );
-        MongoConfigUtil.setOutputURI( conf, "mongodb://localhost/testdb.out" );
-        System.out.println( "Conf: " + conf );
+		job.setJarByClass(WordCount.class);
 
-        final Job job = new Job( conf, "word count" );
+		job.setMapperClass(TokenizerMapper.class);
 
-        job.setJarByClass( WordCount.class );
+		job.setCombinerClass(IntSumReducer.class);
+		job.setReducerClass(IntSumReducer.class);
 
-        job.setMapperClass( TokenizerMapper.class );
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(IntWritable.class);
 
-        job.setCombinerClass( IntSumReducer.class );
-        job.setReducerClass( IntSumReducer.class );
+		job.setInputFormatClass(MongoInputFormat.class);
+		job.setOutputFormatClass(MongoOutputFormat.class);
 
-        job.setOutputKeyClass( Text.class );
-        job.setOutputValueClass( IntWritable.class );
-
-        job.setInputFormatClass( MongoInputFormat.class );
-        job.setOutputFormatClass( MongoOutputFormat.class );
-
-        System.exit( job.waitForCompletion( true ) ? 0 : 1 );
-    }
+		System.exit(job.waitForCompletion(true) ? 0 : 1);
+	}
 }
