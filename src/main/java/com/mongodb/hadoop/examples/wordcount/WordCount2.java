@@ -19,35 +19,35 @@ import org.apache.hadoop.util.ToolRunner;
 
 public class WordCount2 extends Configured implements Tool {
 
-	static public class WordCountMapper extends
-			Mapper<LongWritable, Text, Text, LongWritable> {
-		final private static LongWritable ONE = new LongWritable(1);
-		private Text tokenValue = new Text();
-
-		@Override
-		protected void map(LongWritable offset, Text text, Context context)
-				throws IOException, InterruptedException {
-			for (String token : text.toString().split("\\s+")) {
-				tokenValue.set(token);
-				context.write(tokenValue, ONE);
-			}
-		}
-	}
-
-	static public class WordCountReducer extends
-			Reducer<Text, LongWritable, Text, LongWritable> {
-		private LongWritable total = new LongWritable();
-
-		@Override
-		protected void reduce(Text token, Iterable<LongWritable> counts,
-				Context context) throws IOException, InterruptedException {
-			long n = 0;
-			for (LongWritable count : counts)
-				n += count.get();
-			total.set(n);
-			context.write(token, total);
-		}
-	}
+//	static public class WordCountMapper extends
+//			Mapper<LongWritable, Text, Text, LongWritable> {
+//		final private static LongWritable ONE = new LongWritable(1);
+//		private Text tokenValue = new Text();
+//
+//		@Override
+//		protected void map(LongWritable offset, Text text, Context context)
+//				throws IOException, InterruptedException {
+//			for (String token : text.toString().split("\\s+")) {
+//				tokenValue.set(token);
+//				context.write(tokenValue, ONE);
+//			}
+//		}
+//	}
+//
+//	static public class WordCountReducer extends
+//			Reducer<Text, LongWritable, Text, LongWritable> {
+//		private LongWritable total = new LongWritable();
+//
+//		@Override
+//		protected void reduce(Text token, Iterable<LongWritable> counts,
+//				Context context) throws IOException, InterruptedException {
+//			long n = 0;
+//			for (LongWritable count : counts)
+//				n += count.get();
+//			total.set(n);
+//			context.write(token, total);
+//		}
+//	}
 
 	public int run(String[] args) throws Exception {
 
@@ -55,19 +55,21 @@ public class WordCount2 extends Configured implements Tool {
 
 		Job job = new Job(configuration, "Word Count");
 		job.setJarByClass(WordCount2.class);
+		
+		System.out.println(configuration.get("envtType"));
 
-		job.setMapperClass(WordCountMapper.class);
-		job.setCombinerClass(WordCountReducer.class);
-		job.setReducerClass(WordCountReducer.class);
-
-		job.setInputFormatClass(TextInputFormat.class);
-		job.setOutputFormatClass(TextOutputFormat.class);
-
-		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(LongWritable.class);
-
-		FileInputFormat.setInputPaths(job, new Path(args[0]));
-		FileOutputFormat.setOutputPath(job, new Path(args[1]));
+//		job.setMapperClass(WordCountMapper.class);
+//		job.setCombinerClass(WordCountReducer.class);
+//		job.setReducerClass(WordCountReducer.class);
+//
+//		job.setInputFormatClass(TextInputFormat.class);
+//		job.setOutputFormatClass(TextOutputFormat.class);
+//
+//		job.setOutputKeyClass(Text.class);
+//		job.setOutputValueClass(LongWritable.class);
+//
+		FileInputFormat.setInputPaths(job, new Path("input"));
+		FileOutputFormat.setOutputPath(job, new Path("testoutput"));
 
 		return job.waitForCompletion(true) ? 0 : -1;
 	}

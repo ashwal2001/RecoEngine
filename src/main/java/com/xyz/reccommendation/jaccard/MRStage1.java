@@ -101,7 +101,7 @@ public class MRStage1 {
 		// HDFS input and output directory
 		// FileInputFormat.setInputPaths(conf, new Path("input"));
 		MongoConfigUtil
-				.setInputURI(conf, "mongodb://54.251.196.236/products.pview");
+				.setInputURI(conf, "mongodb://localhost/products.pview_simple");
 		MongoConfigUtil.setCreateInputSplits(conf, false);
 		FileOutputFormat.setOutputPath(conf, new Path("intermediate0"));
 		// Run map-reduce job
